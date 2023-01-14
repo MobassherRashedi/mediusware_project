@@ -2,11 +2,21 @@ import React, {useState} from 'react';
 import TagsInput from 'react-tagsinput';
 import 'react-tagsinput/react-tagsinput.css';
 import Dropzone from 'react-dropzone'
-
+import axios from 'axios';
 
 const CreateProduct = (props) => {
 
     const [productVariantPrices, setProductVariantPrices] = useState([])
+
+    const [productName, setProductName] = useState("")
+    const [productSku, setProductSku] = useState("")
+    const [productDescription, setProductDescription] = useState("")
+
+    const [acceptedFiles, setAcceptedFiles] = useState([]);
+
+
+    const [price, setPrice] = useState(0);
+    const [stock, setStock] = useState(0);
 
     const [productVariants, setProductVariant] = useState([
         {
@@ -50,6 +60,8 @@ const CreateProduct = (props) => {
             tags.push(item.tags)
         })
 
+   
+        
         setProductVariantPrices([])
 
         getCombn(tags).forEach(item => {
@@ -61,6 +73,19 @@ const CreateProduct = (props) => {
         })
 
     }
+
+    const handlePriceChange = (event, index) => {
+        const updatedProductVariantPrices = [...productVariantPrices];
+        updatedProductVariantPrices[index].price = event.target.value;
+        setProductVariantPrices(updatedProductVariantPrices);
+    }
+    
+    const handleStockChange = (event, index) => {
+        const updatedProductVariantPrices = [...productVariantPrices];
+        updatedProductVariantPrices[index].stock = event.target.value;
+        setProductVariantPrices(updatedProductVariantPrices);
+    }
+    
 
     // combination algorithm
     function getCombn(arr, pre) {
@@ -74,10 +99,48 @@ const CreateProduct = (props) => {
         return ans;
     }
 
+    // get csrf 
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+
     // Save product
     let saveProduct = (event) => {
         event.preventDefault();
         // TODO : write your code here to save the product
+
+        const productData = {
+            product_title: productName,
+            sku: productSku,
+            description: productDescription,
+            images: acceptedFiles,
+            variants: productVariants,
+            variantPrices: productVariantPrices,
+        }
+
+        const data = JSON.stringify(productData)
+        console.log(data)
+
+        axios.post('http://localhost:8000/product/create/test/', data)
+        .then(response => {
+            console.log(response.data);
+        })
+        .catch(error => {
+            console.log(error);
+        });
+
     }
 
 
@@ -90,15 +153,18 @@ const CreateProduct = (props) => {
                             <div className="card-body">
                                 <div className="form-group">
                                     <label htmlFor="">Product Name</label>
-                                    <input type="text" placeholder="Product Name" className="form-control"/>
+                                    <input type="text" value={productName}
+        onChange={e => setProductName(e.target.value)} placeholder="Product Name" className="form-control"/>
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="">Product SKU</label>
-                                    <input type="text" placeholder="Product Name" className="form-control"/>
+                                    <input type="text" value={productSku}
+                                    onChange={e => setProductSku(e.target.value)} placeholder="Product Name" className="form-control"/>
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="">Description</label>
-                                    <textarea id="" cols="30" rows="4" className="form-control"></textarea>
+                                    <textarea value={productDescription}
+                                    onChange={e => setProductDescription(e.target.value)} id="" cols="30" rows="4" className="form-control"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -109,7 +175,7 @@ const CreateProduct = (props) => {
                                 <h6 className="m-0 font-weight-bold text-primary">Media</h6>
                             </div>
                             <div className="card-body border">
-                                <Dropzone onDrop={acceptedFiles => console.log(acceptedFiles)}>
+                                <Dropzone onDrop={acceptedFiles => setAcceptedFiles(acceptedFiles)}>
                                     {({getRootProps, getInputProps}) => (
                                         <section>
                                             <div {...getRootProps()}>
@@ -198,11 +264,16 @@ const CreateProduct = (props) => {
                                         <tbody>
                                         {
                                             productVariantPrices.map((productVariantPrice, index) => {
+                                                console.log(productVariantPrice, index,"+++++++++++++++++++++++")
                                                 return (
                                                     <tr key={index}>
                                                         <td>{productVariantPrice.title}</td>
-                                                        <td><input className="form-control" type="text"/></td>
-                                                        <td><input className="form-control" type="text"/></td>
+                                                        <td> 
+                                                        <input value={productVariantPrices.price} onChange={(event) => handlePriceChange(event, index)} className="form-control" type="text"/>
+                                                        </td>
+                                                        <td>
+                                                        <input value={productVariantPrices.stock} onChange={(event) => handleStockChange(event, index)}  className="form-control" type="text"/>
+                                                        </td>
                                                     </tr>
                                                 )
                                             })
