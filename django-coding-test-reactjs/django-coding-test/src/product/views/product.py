@@ -1,8 +1,8 @@
 from django.views import generic
 from django.views.generic import ListView, CreateView, UpdateView
-
+from django.shortcuts import render
 from product.models import Product,Variant,ProductImage,ProductVariant,ProductVariantPrice
-
+import json
 
 
 class CreateProductView(generic.TemplateView):
@@ -81,5 +81,96 @@ class ProductFilterView(ListView):
         return queryset
 
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from product.models import Product, ProductImage, ProductVariant, Variant, ProductVariantPrice
 
 
+
+'''
+def CreateTestProduct(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+
+        # save product
+        product = Product.objects.create(
+            title=data['product_title'],
+            sku=data['sku'],
+            description=data['description']
+        )
+
+        # save product images
+        for image in data['images']:
+            ProductImage.objects.create(
+                product=product,
+                path=image['path']
+            )
+
+        # save product variants
+        for variant in data['variants']:
+            variant_obj = Variant.objects.get(id=variant['option'])
+            product_variant = ProductVariant.objects.create(
+                product=product,
+                variant=variant_obj,
+            )
+
+            # save tags for product variant
+            for tag in variant['tags']:
+                product_variant.tags.add(tag)
+            product_variant.save()
+
+        # save product variant prices
+        for variant_price in data['variantPrices']:
+            ProductVariantPrice.objects.create(
+                product_variant=product_variant,
+                title=variant_price['title'],
+                price=variant_price['price'],
+                stock=variant_price['stock']
+            )
+        return JsonResponse({"status": "success"})
+    else:
+        return JsonResponse({"status": "error"})
+'''
+@csrf_exempt
+def CreateTestProduct(request):
+    if request.method == "POST":
+        # data = request.body
+        data = json.loads(request.body)
+        # Create Product
+        product = Product.objects.create(
+            title=data['product_title'],
+            sku=data['sku'],
+            description=data['description']
+        )
+        
+        # Create Product Image
+        for image in data['images']:
+            ProductImage.objects.create(
+                product=product,
+                file_path=image
+            )
+
+        # Create Product Variants
+        for variant in data['variants']:
+            Product_Variant_obj = Variant.objects.get(id=variant['option'])
+            for tag in variant['tags']:
+                ProductVariant.objects.create(
+                    variant_title=tag,
+                    variant=Product_Variant_obj,
+                    product=product
+                )
+
+        # Create Product Variant Prices
+        for variant_price in data['variantPrices']:
+            ProductVariantPrice.objects.create(
+                product_variant_one=ProductVariant.objects.filter(product=product,variant_title__icontains=variant_price['title'].split('/')[0])[0],
+                product_variant_two=ProductVariant.objects.filter(product=product,variant_title__icontains=variant_price['title'].split('/')[1])[0],
+                product_variant_three=ProductVariant.objects.filter(product=product,variant_title__icontains=variant_price['title'].split('/')[2])[0],
+                price=variant_price['price'],
+                stock=variant_price['stock'],
+                product=product
+            )
+        
+        return JsonResponse({"status": "success"})
+    else:
+        return JsonResponse({"status": "error"})
