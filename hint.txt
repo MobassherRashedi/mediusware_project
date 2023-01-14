@@ -1,0 +1,118 @@
+
+const saveProduct = (event) => {
+    event.preventDefault();
+
+    const productData = {
+        title: event.target.elements.productTitle.value,
+        sku: event.target.elements.productSKU.value,
+        description: event.target.elements.productDescription.value
+    };
+
+    fetch('/api/products/', {
+        method: 'POST',
+        body: JSON.stringify(productData),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+
+
+
+
+
+//////////////////////////////////////////////////////////////////
+
+from django.shortcuts import render,redirect
+from .models import Product,Variant,ProductImage,ProductVariant,ProductVariantPrice
+from django.http import JsonResponse
+
+def create_product(request):
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        sku = request.POST.get('sku')
+        description = request.POST.get('description')
+
+        product = Product.objects.create(
+            title=title,
+            sku=sku,
+            description=description
+        )
+        product_id = product.id
+        variant_title= request.POST.getlist('variant_title[]')
+        variant_id = request.POST.getlist('variant_id[]')
+        tags = request.POST.getlist('tags[]')
+        price = request.POST.getlist('price[]')
+        stock = request.POST.getlist('stock[]')
+        for i in range(len(variant_title)):
+            variant = Variant.objects.get(id=variant_id[i])
+            product_variant = ProductVariant.objects.create(
+                variant=variant,
+                variant_title=variant_title[i],
+                product=product
+            )
+            product_variant_price = ProductVariantPrice.objects.create(
+                product_variant_one=product_variant,
+                price=price[i],
+                stock=stock[i]
+            )
+        if 'product_image' in request.FILES:
+            product_image = request.FILES['product_image']
+            ProductImage.objects.create(
+                product=product,
+                file_path=product_image
+            )
+        return JsonResponse({'product_id': product_id})
+    else:
+        return JsonResponse({'error': 'Invalid Request'})
+
+
+
+
+
+
+
+
+
+/////////////////////////////////////////////////////////
+
+
+let saveProduct = (event) => {
+    event.preventDefault();
+    let productTitle = event.target.elements.productTitle.value;
+    let productSKU = event.target.elements.productSKU.value;
+    let productDescription = event.target.elements.productDescription.value;
+
+    let product = new Product({
+        title: productTitle,
+        sku: productSKU,
+        description: productDescription
+    });
+    product.save();
+
+    let productVariant = new ProductVariant({
+        variant_title: variantTitle,
+        variant: variantId,
+        product: product
+    });
+    productVariant.save();
+
+    let productVariantPrice = new ProductVariantPrice({
+        product_variant_one: productVariant,
+        price: price,
+        stock: stock,
+        product: product
+    });
+    productVariantPrice.save();
+    // Repeat the above steps for other models and fields
+}
+
+
+///////////////////////////////////////////////////////////////////
